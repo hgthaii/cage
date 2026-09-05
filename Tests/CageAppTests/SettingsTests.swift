@@ -5,6 +5,21 @@ import XCTest
 
 @MainActor
 final class SettingsTests: XCTestCase {
+    func testEscapeAndCommandWCloseSettingsWithoutQuitting() async throws {
+        _ = NSApplication.shared
+        let window = RecordingSettingsWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        for (key, code, flags) in [("\u{1b}", UInt16(53), NSEvent.ModifierFlags()), ("w", UInt16(13), .command)] {
+            let event = try XCTUnwrap(NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: flags, timestamp: 0,
+                windowNumber: window.windowNumber, context: nil, characters: key,
+                charactersIgnoringModifiers: key, isARepeat: false, keyCode: code
+            ))
+            XCTAssertTrue(window.performKeyEquivalent(with: event))
+        }
+        XCTAssertEqual(window.closeRequests, 2)
+        window.cancelOperation(nil)
+        XCTAssertEqual(window.closeRequests, 3)
+    }
     func testPermissionGrantAndRevocationUpdateControlsAndBanner() async throws {
         try await MainActor.run {
             let controller = makeSettings()
@@ -105,4 +120,10 @@ final class SettingsTests: XCTestCase {
     private func button(_ title: String, in view: NSView) throws -> NSButton {
         try XCTUnwrap(descendants(view).compactMap { $0 as? NSButton }.first { $0.title == title })
     }
+}
+
+@MainActor
+private final class RecordingSettingsWindow: SettingsWindow {
+    var closeRequests = 0
+    override func performClose(_ sender: Any?) { closeRequests += 1 }
 }

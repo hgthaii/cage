@@ -33,7 +33,7 @@ final class AboutWindowController: NSWindowController, NSWindowDelegate {
         self.registry = registry
         self.onOpenAccessibility = onOpenAccessibility
         self.onCheckForUpdates = onCheckForUpdates
-        let window = NSWindow(
+        let window = SettingsWindow(
             contentRect: NSRect(x: 0, y: 0, width: 480, height: 490),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
@@ -84,27 +84,31 @@ final class AboutWindowController: NSWindowController, NSWindowDelegate {
         navigation.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
 
         let header = NSStackView()
-        header.orientation = .horizontal
-        header.alignment = .centerY
-        header.spacing = 14
+        header.orientation = .vertical
+        header.alignment = .centerX
+        header.spacing = 12
         let icon = NSImageView(image: NSApp.applicationIconImage)
         icon.translatesAutoresizingMaskIntoConstraints = false
-        icon.widthAnchor.constraint(equalToConstant: 64).isActive = true
-        icon.heightAnchor.constraint(equalToConstant: 64).isActive = true
+        icon.widthAnchor.constraint(equalToConstant: 48).isActive = true
+        icon.heightAnchor.constraint(equalToConstant: 48).isActive = true
         let title = NSTextField(labelWithString: AppIdentity.productName)
-        title.font = .systemFont(ofSize: 22, weight: .semibold)
+        title.font = .systemFont(ofSize: 20, weight: .semibold)
         let tagline = NSTextField(labelWithString: AppIdentity.tagline)
         tagline.textColor = .secondaryLabelColor
         tagline.font = .systemFont(ofSize: 12)
         let version = NSTextField(labelWithString: versionText)
         version.textColor = .tertiaryLabelColor
         version.font = .systemFont(ofSize: 11)
-        let titleStack = NSStackView(views: [title, tagline, version])
+        let titleStack = NSStackView(views: [title, version])
         titleStack.orientation = .vertical
         titleStack.alignment = .leading
         titleStack.spacing = 3
-        header.addArrangedSubview(icon)
-        header.addArrangedSubview(titleStack)
+        let identity = NSStackView(views: [icon, titleStack])
+        identity.orientation = .horizontal
+        identity.alignment = .centerY
+        identity.spacing = 10
+        header.addArrangedSubview(identity)
+        header.addArrangedSubview(tagline)
         root.addArrangedSubview(header)
         aboutViews.append(header)
 
@@ -180,7 +184,7 @@ final class AboutWindowController: NSWindowController, NSWindowDelegate {
 
         let credits = NSStackView()
         credits.orientation = .vertical
-        credits.alignment = .leading
+        credits.alignment = .centerX
         credits.spacing = 4
         for text in ["Developed by hgthaii", "Based on MouseLock by mxrlkn"] {
             let label = NSTextField(labelWithString: text)
@@ -193,21 +197,22 @@ final class AboutWindowController: NSWindowController, NSWindowDelegate {
 
         let updates = NSButton(title: "Check for Updates…", target: self, action: #selector(checkForUpdates))
         let reportBug = NSButton(title: "Report a Bug…", target: self, action: #selector(openIssues))
-        [updates, reportBug].forEach { $0.bezelStyle = .rounded }
-        let aboutActions = NSStackView(views: [updates, reportBug])
-        aboutActions.spacing = 10
-        root.addArrangedSubview(aboutActions)
-        aboutViews.append(aboutActions)
-        gatedControls += [updates, reportBug]
-
         let footer = NSStackView()
-        footer.orientation = .horizontal
+        footer.orientation = .vertical
+        footer.alignment = .centerX
+        footer.spacing = 16
         let github = NSButton(title: "GitHub", target: self, action: #selector(openGitHub))
-        github.isBordered = false
-        github.contentTintColor = .secondaryLabelColor
-        gatedControls.append(github)
-        footer.addArrangedSubview(github)
-        footer.addArrangedSubview(NSView())
+        let actions = [updates, reportBug, github]
+        for button in actions {
+            button.bezelStyle = .inline
+            button.isBordered = false
+            button.font = .systemFont(ofSize: 11)
+            button.contentTintColor = .secondaryLabelColor
+        }
+        let aboutActions = NSStackView(views: actions)
+        aboutActions.spacing = 16
+        footer.addArrangedSubview(aboutActions)
+        gatedControls += actions
         let copyright = NSTextField(labelWithString: "© 2026 hgthaii")
         copyright.font = .systemFont(ofSize: 10)
         copyright.textColor = .tertiaryLabelColor
@@ -215,7 +220,7 @@ final class AboutWindowController: NSWindowController, NSWindowDelegate {
         root.addArrangedSubview(footer)
         aboutViews.append(footer)
 
-        [header, permissionCard, gamesHeader, gamesCard, footer].forEach {
+        [header, permissionCard, gamesHeader, gamesCard, credits, footer].forEach {
             $0.widthAnchor.constraint(equalTo: root.widthAnchor).isActive = true
         }
         gamesCard.heightAnchor.constraint(equalToConstant: 190).isActive = true
