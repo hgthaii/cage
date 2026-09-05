@@ -39,6 +39,7 @@ tell application "Finder"
             set current view to icon view
             set toolbar visible to false
             set statusbar visible to false
+            set pathbar visible to false
             set bounds to {120, 120, 840, 390}
         end tell
         set backgroundFile to file "Cage.app:Contents:Resources:InstallerBackground.png"
@@ -48,11 +49,24 @@ tell application "Finder"
             set arrangement to not arranged
             set background picture to backgroundFile
         end tell
-        set position of item "Cage.app" to {180, 145}
-        set position of item "Applications" to {540, 145}
+        set position of item "Cage.app" to {180, 105}
+        set position of item "Applications" to {540, 105}
         close
         open
-        delay 3
+        -- Recalculate the icon-view extent after reopening, before Finder saves it.
+        delay 1
+        tell container window
+            set bounds to {120, 120, 830, 380}
+        end tell
+    end tell
+    delay 1
+    tell disk diskName
+        tell container window
+            set bounds to {120, 120, 840, 390}
+        end tell
+    end tell
+    delay 3
+    tell disk diskName
         close container window
     end tell
 end tell

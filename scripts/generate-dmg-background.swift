@@ -10,11 +10,11 @@ NSColor.windowBackgroundColor.setFill()
 NSBezierPath(rect: NSRect(origin: .zero, size: size)).fill()
 
 let arrow = NSBezierPath()
-arrow.move(to: NSPoint(x: 316, y: 105))
-arrow.line(to: NSPoint(x: 404, y: 105))
-arrow.move(to: NSPoint(x: 390, y: 118))
-arrow.line(to: NSPoint(x: 404, y: 105))
-arrow.line(to: NSPoint(x: 390, y: 92))
+arrow.move(to: NSPoint(x: 316, y: 165))
+arrow.line(to: NSPoint(x: 404, y: 165))
+arrow.move(to: NSPoint(x: 390, y: 178))
+arrow.line(to: NSPoint(x: 404, y: 165))
+arrow.line(to: NSPoint(x: 390, y: 152))
 arrow.lineWidth = 2
 arrow.lineCapStyle = .round
 arrow.lineJoinStyle = .round
