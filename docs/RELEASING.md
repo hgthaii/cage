@@ -12,6 +12,13 @@ Repository cần ba secret:
 - `CAGE_SIGNING_CERTIFICATE_PASSWORD`
 - `SPARKLE_EDDSA_PRIVATE_KEY`
 
+Không cần GitHub Actions variables bổ sung. Push lên `dev` hoặc `main` chỉ chạy
+kiểm tra; tạo release cần tag `vX.Y.Z`.
+
+Danh tính ký hiện tại là `Cage Self-Signed Release`, được lưu trong Keychain local.
+Để build local với cùng danh tính, đặt `CAGE_CODE_SIGN_IDENTITY="Cage Self-Signed Release"`.
+Chứng chỉ self-signed không thay thế Developer ID hoặc notarization của Apple.
+
 Public Sparkle key nằm trong `Resources/Info.plist`. Private key đã được tạo dưới
 account Keychain `dev.hgthaii.cage`; xuất key bằng công cụ `generate_keys` của
 Sparkle rồi lưu thẳng vào GitHub Secret, không commit vào repository.

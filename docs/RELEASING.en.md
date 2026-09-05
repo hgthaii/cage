@@ -12,6 +12,13 @@ The repository needs three secrets:
 - `CAGE_SIGNING_CERTIFICATE_PASSWORD`
 - `SPARKLE_EDDSA_PRIVATE_KEY`
 
+No additional GitHub Actions variables are required. Pushes to `dev` or `main`
+run checks only; publishing a release requires a `vX.Y.Z` tag.
+
+The current signing identity is `Cage Self-Signed Release`, stored in the local
+Keychain. Set `CAGE_CODE_SIGN_IDENTITY="Cage Self-Signed Release"` to use the same
+identity for local builds. Self-signing does not replace Apple Developer ID or notarization.
+
 The public Sparkle key is stored in `Resources/Info.plist`. The private key was
 created under the `dev.hgthaii.cage` Keychain account; export it with Sparkle's
 `generate_keys` tool and save it directly as a GitHub Secret. Never commit it.
