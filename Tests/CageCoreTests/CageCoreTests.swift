@@ -3,6 +3,17 @@ import XCTest
 @testable import CageCore
 
 final class CageCoreTests: XCTestCase {
+    func testRelaunchOnlyOnceAfterPermissionGrant() {
+        var policy = AccessibilityRelaunchPolicy()
+        XCTAssertFalse(policy.shouldRelaunch(trusted: false))
+        XCTAssertFalse(policy.shouldRelaunch(trusted: false))
+        XCTAssertTrue(policy.shouldRelaunch(trusted: true))
+        XCTAssertFalse(policy.shouldRelaunch(trusted: true))
+        XCTAssertFalse(policy.shouldRelaunch(trusted: false))
+        XCTAssertFalse(policy.shouldRelaunch(trusted: true))
+        var startup = AccessibilityRelaunchPolicy()
+        XCTAssertFalse(startup.shouldRelaunch(trusted: true))
+    }
     func testConfinementBoundsInsetEveryEdge() {
         let window = CGRect(x: 100, y: 200, width: 800, height: 600)
         XCTAssertEqual(

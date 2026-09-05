@@ -41,6 +41,7 @@ final class CageController {
         observers.forEach(NSWorkspace.shared.notificationCenter.removeObserver)
         observers.removeAll()
         engine.uninstall()
+        eventTapInstalled = false
     }
 
     func refresh() {

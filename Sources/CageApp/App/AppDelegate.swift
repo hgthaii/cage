@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var cageController: CageController?
     private var menuController: StatusMenuController?
     private var aboutController: AboutWindowController?
+    private var relaunchPolicy = AccessibilityRelaunchPolicy()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -25,8 +26,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onCheckForUpdates: { [weak updates] in updates?.checkForUpdates() }
         )
         state.onChange = { [weak menu] in menu?.refresh() }
-        cage.onAccessibilityChange = { [weak about] trusted in
+        cage.onAccessibilityChange = { [weak self, weak about] trusted in
             about?.refreshAccessibility(trusted: trusted)
+            guard self?.relaunchPolicy.shouldRelaunch(trusted: trusted) == true else { return }
+            Task { @MainActor [weak self] in self?.relaunchAfterGrant() }
         }
         registry.onChange = { [weak cage, weak about] in
             about?.refreshFromRegistry()
@@ -37,6 +40,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         aboutController = about
         updates.start()
         cage.start()
+        if ProcessInfo.processInfo.arguments.contains("--show-settings") {
+            about.present()
+        }
+    }
+
+    private func relaunchAfterGrant() {
+        // Stop capturing before starting the replacement process.
+        cageController?.stop()
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        configuration.arguments = ["--show-settings"]
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { [weak self] _, error in
+            Task { @MainActor [weak self] in
+                if let error {
+                    self?.cageController?.start()
+                    let alert = NSAlert()
+                    alert.messageText = "Couldn’t reopen Cage"
+                    alert.informativeText = "Quit and reopen Cage to refresh access. \(error.localizedDescription)"
+                    if let window = self?.aboutController?.window { alert.beginSheetModal(for: window) }
+                } else {
+                    NSApp.terminate(nil)
+                }
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
