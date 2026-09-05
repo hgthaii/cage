@@ -1,20 +1,7 @@
-#!/bin/sh
-set -e
+#!/usr/bin/env bash
 
-# get version tag or commit id
-VERSION=$(git describe HEAD)
+set -euo pipefail
 
-# set app version
-agvtool new-version ${VERSION:1}
-
-# build
-xcodebuild -quiet -configuration Release -target Mouselock
-
-# clean dist
-rm -rf dist && mkdir dist
-
-# make dmg from app
-hdiutil create -fs HFS+ -srcfolder build/Release/Mouselock.app -volname Mouselock dist/Mouselock.dmg
-
-# clean build
-rm -r build
+repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export CAGE_BUILD_NUMBER="${CAGE_BUILD_NUMBER:-$(git -C "${repository_root}" rev-list --count HEAD)}"
+bash "${repository_root}/scripts/build-dmg.sh"
