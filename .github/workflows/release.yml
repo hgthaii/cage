@@ -1,0 +1,105 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, dev]
+    tags: ["v*.*.*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: cage-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test and build app
+    runs-on: macos-26
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Resolve version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+            echo "CAGE_VERSION=${GITHUB_REF_NAME#v}" >> "${GITHUB_ENV}"
+          else
+            echo "CAGE_VERSION=0.0.0" >> "${GITHUB_ENV}"
+          fi
+          echo "CAGE_BUILD_NUMBER=${GITHUB_RUN_NUMBER}" >> "${GITHUB_ENV}"
+      - name: Test
+        run: swift test --disable-sandbox
+      - name: Build and verify app
+        run: bash scripts/app.sh build-and-verify
+      - name: Archive app
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent /private/tmp/cage-app/Cage.app dist/Cage-app.zip
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Cage-App-${{ github.sha }}
+          path: dist/Cage-app.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Build release
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-26
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      CAGE_REQUIRE_STABLE_SIGNING: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Resolve version
+        shell: bash
+        run: |
+          [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          echo "CAGE_VERSION=${GITHUB_REF_NAME#v}" >> "${GITHUB_ENV}"
+          echo "CAGE_BUILD_NUMBER=${GITHUB_RUN_NUMBER}" >> "${GITHUB_ENV}"
+      - name: Import signing certificate
+        env:
+          CAGE_SIGNING_CERTIFICATE_P12_BASE64: ${{ secrets.CAGE_SIGNING_CERTIFICATE_P12_BASE64 }}
+          CAGE_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.CAGE_SIGNING_CERTIFICATE_PASSWORD }}
+        run: bash scripts/import-signing-certificate.sh
+      - name: Build DMG
+        run: bash scripts/build-dmg.sh
+      - name: Build Sparkle update
+        env:
+          SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
+        run: bash scripts/release.sh build-update
+      - name: Verify release
+        run: bash scripts/release.sh verify "dist/Cage.dmg" "dist/Cage-${CAGE_VERSION}.zip" "dist/appcast.xml"
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Cage-Release-${{ github.ref_name }}
+          path: |
+            dist/Cage.dmg
+            dist/*.zip
+            dist/appcast.xml
+          if-no-files-found: error
+          retention-days: 14
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            dist/Cage.dmg
+            dist/*.zip
+            dist/appcast.xml
+          generate_release_notes: true
+      - name: Remove temporary keychain
+        if: always()
+        run: |
+          if [[ -n "${CAGE_SIGNING_KEYCHAIN:-}" ]]; then
+            security delete-keychain "${CAGE_SIGNING_KEYCHAIN}" || true
+          fi
