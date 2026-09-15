@@ -5,6 +5,27 @@ import XCTest
 
 @MainActor
 final class SettingsTests: XCTestCase {
+    func testConfinementPassesRealMouseMovementThroughUnchanged() throws {
+        let engine = CursorConfinementEngine()
+        engine.update(
+            bounds: CGRect(x: 4, y: 4, width: 992, height: 792),
+            windowBounds: CGRect(x: 0, y: 0, width: 1000, height: 800)
+        )
+        let event = try XCTUnwrap(CGEvent(
+            mouseEventSource: nil,
+            mouseType: .mouseMoved,
+            mouseCursorPosition: CGPoint(x: 500, y: 400),
+            mouseButton: .left
+        ))
+        event.setIntegerValueField(.mouseEventDeltaX, value: 17)
+        event.setIntegerValueField(.mouseEventDeltaY, value: -9)
+        let originalLocation = event.location
+        XCTAssertNotNil(engine.handle(type: .mouseMoved, event: event))
+        XCTAssertEqual(event.location, originalLocation)
+        XCTAssertEqual(event.getIntegerValueField(.mouseEventDeltaX), 17)
+        XCTAssertEqual(event.getIntegerValueField(.mouseEventDeltaY), -9)
+    }
+
     func testEscapeAndCommandWCloseSettingsWithoutQuitting() async throws {
         _ = NSApplication.shared
         let window = RecordingSettingsWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)

@@ -62,8 +62,14 @@ final class CageController {
             game: game,
             windowBounds: bounds
         )
-        if case let .locked(_, bounds) = resolved { engine.update(bounds: bounds) }
-        else { engine.update(bounds: nil) }
+        if case let .locked(_, confinementBounds) = resolved {
+            engine.update(
+                bounds: confinementBounds,
+                windowBounds: bounds
+            )
+        } else {
+            engine.update(bounds: nil, windowBounds: nil)
+        }
         state.update(resolved)
 
         if !trusted, !requestedPermission {

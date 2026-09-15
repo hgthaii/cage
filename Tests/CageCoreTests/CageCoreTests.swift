@@ -14,7 +14,7 @@ final class CageCoreTests: XCTestCase {
         var startup = AccessibilityRelaunchPolicy()
         XCTAssertFalse(startup.shouldRelaunch(trusted: true))
     }
-    func testConfinementBoundsInsetEveryEdge() {
+    func testSystemCursorBoundsStayInsideEveryEdge() {
         let window = CGRect(x: 100, y: 200, width: 800, height: 600)
         XCTAssertEqual(
             CursorGeometry.confinementBounds(for: window),
@@ -46,6 +46,38 @@ final class CageCoreTests: XCTestCase {
         XCTAssertEqual(CursorGeometry.clamped(CGPoint(x: 950, y: 500), to: bounds).x, 900)
         XCTAssertEqual(CursorGeometry.clamped(CGPoint(x: 500, y: 150), to: bounds).y, 200)
         XCTAssertEqual(CursorGeometry.clamped(CGPoint(x: 500, y: 850), to: bounds).y, 800)
+    }
+
+    func testOutwardMouseDeltaIsSuppressedAtEveryEdge() {
+        let bounds = CGRect(x: 100, y: 200, width: 800, height: 600)
+        XCTAssertEqual(
+            CursorGeometry.confinedDelta(CGPoint(x: -40, y: 7), at: CGPoint(x: 100, y: 400), within: bounds),
+            CGPoint(x: 0, y: 7)
+        )
+        XCTAssertEqual(
+            CursorGeometry.confinedDelta(CGPoint(x: 40, y: -7), at: CGPoint(x: 900, y: 400), within: bounds),
+            CGPoint(x: 0, y: -7)
+        )
+        XCTAssertEqual(
+            CursorGeometry.confinedDelta(CGPoint(x: 4, y: -30), at: CGPoint(x: 500, y: 200), within: bounds),
+            CGPoint(x: 4, y: 0)
+        )
+        XCTAssertEqual(
+            CursorGeometry.confinedDelta(CGPoint(x: -4, y: 30), at: CGPoint(x: 500, y: 800), within: bounds),
+            CGPoint(x: -4, y: 0)
+        )
+    }
+
+    func testInwardMouseDeltaIsPreservedAtEdges() {
+        let bounds = CGRect(x: 100, y: 200, width: 800, height: 600)
+        XCTAssertEqual(
+            CursorGeometry.confinedDelta(CGPoint(x: 12, y: 8), at: CGPoint(x: 100, y: 200), within: bounds),
+            CGPoint(x: 12, y: 8)
+        )
+        XCTAssertEqual(
+            CursorGeometry.confinedDelta(CGPoint(x: -12, y: -8), at: CGPoint(x: 900, y: 800), within: bounds),
+            CGPoint(x: -12, y: -8)
+        )
     }
 
     func testStateLocksAnyRegisteredGame() {
